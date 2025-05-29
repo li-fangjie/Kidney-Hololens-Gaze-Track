@@ -31,11 +31,13 @@ namespace MRTK.Tutorials.MultiUserCapabilities
         {
             if (stream.IsWriting)
             {
+                Debug.Log("PhotoSerializeView Writing");
                 stream.SendNext(transform.localPosition);
                 stream.SendNext(transform.localRotation);
             }
             else
             {
+                Debug.Log("PhotoSerializeView Receiving");
                 networkLocalPosition = (Vector3) stream.ReceiveNext();
                 networkLocalRotation = (Quaternion) stream.ReceiveNext();
             }
@@ -70,7 +72,7 @@ namespace MRTK.Tutorials.MultiUserCapabilities
         }
 
         // private void FixedUpdate()
-        private void Update()
+        private void FixedUpdate()
         {
             if (!photonView.IsMine)
             {
