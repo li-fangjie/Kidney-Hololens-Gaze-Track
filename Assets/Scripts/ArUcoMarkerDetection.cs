@@ -34,9 +34,11 @@ namespace ArUcoDetectionHoloLensUnity
     // https://docs.unity3d.com/2018.4/Documentation/Manual/IL2CPP-WindowsRuntimeSupport.html
     public class ArUcoMarkerDetection : MonoBehaviour
     {
+        [SerializeField] AppConfig appConfig;
+
         private bool _isWorldAnchored = false;
 
-        public Text myText=null;
+        public Text myText = null;
 
         public CvUtils.DeviceTypeUnity deviceType;
 
@@ -46,10 +48,10 @@ namespace ArUcoDetectionHoloLensUnity
 
         // Params for aruco detection
         // Marker size in meters: 0.08 m = 8 cm
-        public float markerSize;
+        public float markerSize; // 0.16 m
 
-        public float RSmoothFactor=0.8f;
-        public float VSmoothFactor=0.8f;
+        public float RSmoothFactor = 0.8f;
+        public float VSmoothFactor = 0.8f;
         public int initTrackTotal = 15;
 
         /// <summary>
@@ -140,6 +142,11 @@ namespace ArUcoDetectionHoloLensUnity
         // Update is called once per frame
         async void Update()
         {
+            if (appConfig != null && (appConfig.appOperation == false || appConfig.arUcoOperation == false))
+            {
+                //Debug.Log("Not Tracking marker");
+                return;
+            }
 #if ENABLE_WINMD_SUPPORT
             _frameCount += 1;
 

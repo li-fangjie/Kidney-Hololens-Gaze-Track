@@ -75,8 +75,8 @@ namespace MRTK.Tutorials.MultiUserCapabilities
             photonPlayers = PhotonNetwork.PlayerList;
             playersInRoom = photonPlayers.Length;
             myNumberInRoom = playersInRoom;
-            PhotonNetwork.NickName = myNumberInRoom.ToString();
-
+            PhotonNetwork.NickName = SystemInfo.deviceName; // "HOLOLENS-CAVERN"; // "HOLOLENS-V30FB1";// myNumberInRoom.ToString();
+            Debug.Log("My name is: " + PhotonNetwork.NickName);
             StartGame();
         }
 
@@ -98,7 +98,7 @@ namespace MRTK.Tutorials.MultiUserCapabilities
         private void CreateInteractableObjects()
         {
             var position = roverExplorerLocation.position;
-            var positionOnTopOfSurface = new Vector3(position.x, position.y + roverExplorerLocation.localScale.y / 2,
+            var positionOnTopOfSurface = new Vector3(posistion.x, position.y + roverExplorerLocation.localScale.y / 2,
                 position.z);
 
             var go = PhotonNetwork.Instantiate(roverExplorerPrefab.name, positionOnTopOfSurface,

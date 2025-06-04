@@ -4,12 +4,16 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Security.Cryptography;
+using System.Text;
 using TMPro;
 using UnityEngine;
 using NetMQ;
 using NetMQ.Sockets;
 using System.Threading;
 using UnityEngine.Assertions;
+using UnityEngine.UI;
+
 
 /* 
  * In charge of the visualization styling control of the cursors, in conjunction with NetMQ Manager and the Control Menu.
@@ -26,6 +30,12 @@ public class GazeCursorController : MonoBehaviour
     [SerializeField] public GameObject recordButton = null;
     [SerializeField] public GameObject screenObj = null;
     [SerializeField] public GameObject controlMenu = null;
+    [SerializeField] public Text dispText = null;
+    public AppConfig appConfig;
+    //public ExtendedEyeGazeDataProvider extendedEyeGazeDataProvider;
+
+    public bool amIPrimaryUser = true;
+    public int myUserIdx = -1;
     private float cursorScaleGradient;
     private bool isOtherCursorVisible = true;
     private int otherCursorStyle = 0;
@@ -49,24 +59,32 @@ public class GazeCursorController : MonoBehaviour
     //private bool listenerRunning = true;
     private SubscriberSocket subscriberSocket;
 
+    //private Coroutine recordingCoroutine;
+    private float dataRecordingRate = 90.0f;
+
+    private int _frameCount = 0;
+    private int userCheckSkipFrame = 5;
+
+
     // Start is called before the first frame update
     void Start()
     {
         AsyncIO.ForceDotNet.Force();
 
-        Time.fixedDeltaTime = 0.0111111f; // 0.016666667f;
+        Time.fixedDeltaTime = 0.015f; //0.016667f; // 0.011111f;
         // Application.targetFrameRate = -1;
         cursorScaleGradient = cursorScaleMax - cursorScaleMin;
         float curScaleValue = (1 - cursorScaleMin) / cursorScaleGradient;
         slider.GetComponent<PinchSlider>().SliderValue = curScaleValue;
         myPhotoViewObj = null;
         otherPhotoViewObj = null;
+        //extendedEyeGazeDataProvider = gameObject.GetComponent<ExtendedEyeGazeDataProvider>();
 
         isOtherCursorVisible = true;
         isMyCursorVisible = true;
         onToggleMyCursorVisibility();
 
-        if (recordButton != null )
+        if (recordButton != null)
         {
             buttonTMP = recordButton.transform.Find("IconAndText").Find("TextMeshPro").gameObject;
         }
@@ -88,86 +106,119 @@ public class GazeCursorController : MonoBehaviour
     // Update is called once per frame
     void FixedUpdate()
     {
+        if (appConfig != null && (appConfig.appOperation == false || appConfig.gazeSaveOperation == false))
+        {
+            //Debug.Log("Not saving gaze");
+            return;
+        }
         //string message = subscriberSocket.ReceiveFrameString();
         //ProcessMessage(message);
 
-        // Retrieve (both) photonViews in the scene
-        // Assumptions: 1. Only 2 photonViews are present. 2. One is my gaze, the other is the other's gaze.
-        // TODO: very inefficient code, try improve it in the future
-        var photonViews = FindObjectsOfType<PhotonView>();
-        foreach (PhotonView view in photonViews)
+        _frameCount += 1;
+        if (_frameCount == userCheckSkipFrame)
         {
-            if (view.IsMine)
-            { 
-                if (myPhotoViewObj == null)
+            _frameCount = 0;
+            // Retrieve (both) photonViews in the scene
+            // Assumptions: 1. Only 2 photonViews are present. 2. One is my gaze, the other is the other's gaze.
+            // TODO: very inefficient code, try improve it in the future
+            var photonViews = FindObjectsOfType<PhotonView>();
+            //int curLowestIdx = System.Int32.MaxValue;
+            string curLowestNickName = null;
+            foreach (PhotonView view in photonViews)
+            {
+                if (view.IsMine)
                 {
-                    myPhotoViewObj = view.gameObject;
-                    for (int i = 0; i < myPhotoViewObj.transform.childCount; i++)
+                    if (myPhotoViewObj == null)
                     {
-                        myPhotoViewObj.transform.GetChild(i).gameObject.GetComponent<Renderer>().material = myMaterial;
+                        myPhotoViewObj = view.gameObject;
+                        for (int i = 0; i < myPhotoViewObj.transform.childCount; i++)
+                        {
+                            myPhotoViewObj.transform.GetChild(i).gameObject.GetComponent<Renderer>().material = myMaterial;
+                        }
                     }
                 }
-            } else 
-            {
-                otherPhotoViewObj = view.gameObject;
+                else
+                {
+                    otherPhotoViewObj = view.gameObject;
+                    if (curLowestNickName == null || StringComparerHelper.CompareHashedStrings(view.Owner.NickName, curLowestNickName) < 0)
+                    {
+                        curLowestNickName = view.Owner.NickName;
+                    }
+                    //if (int.TryParse(otherPhotoViewObj.name.Substring(4), out int otherUserId))
+                    //{
+                    //    if (curLowestNickName == null || StringComparerHelper.CompareHashedStrings(view.Owner.NickName, curLowestNickName) < 0)
+                    //    {
+                    //        curLowestIdx = otherUserId;
+                    //        curLowestNickName = view.Owner.NickName;
+                    //    }
+                    //    //Debug.Log("Extracted otherUserIdx: " + otherUserId);
+                    //}
+                }
             }
+            if (myPhotoViewObj != null)
+            {
+                if (curLowestNickName == null || StringComparerHelper.CompareHashedStrings(myPhotoViewObj.GetComponent<PhotonView>().Owner.NickName, curLowestNickName) < 0)
+                {
+                    curLowestNickName = myPhotoViewObj.GetComponent<PhotonView>().Owner.NickName;
+                    amIPrimaryUser = true;
+                }
+                else
+                {
+                    amIPrimaryUser = false;
+                }
+                //if (myPhotoViewObj != null)
+                //{
+                //    Debug.Log("My name is: " + myPhotoViewObj.name);
+                //}
+                ////Debug.Log(myUserIdx);
+                //Debug.Log("cur lowest NickName: " + curLowestNickName);
+                //Debug.Log("Am I primary User " + amIPrimaryUser);
+            }
+            //if (myUserIdx == -1  && myPhotoViewObj != null)
+            //{
+            //    string numberPart = myPhotoViewObj.name.Substring(4);
+            //    Debug.Log("Processing my user id " + numberPart);
+            //    if (int.TryParse(numberPart, out int userId))
+            //    {
+            //        myUserIdx = userId;
+            //        if (myUserIdx < curLowestIdx)
+            //        {
+            //            curLowestIdx = myUserIdx;
+            //        }
+            //        //Debug.Log("extracted myuseridx: " + userId);
+            //    }
+            //}
+
+            //if (myUserIdx <= curLowestIdx)
+            //{
+            //    amIPrimaryUser = true;
+            //} else
+            //{
+            //    amIPrimaryUser = false;
+            //}
         }
 
-        if (isRecording)
-        {
-            // Data to Save:
-            // My Gaze, local to screen
-            // Other's Gaze, local to screen
-            // My Screen Position
 
-            DateTime curTime = DateTime.Now;
-            saveTransformData(
-                myPhotoViewObj.transform.localPosition.x,
-                myPhotoViewObj.transform.localPosition.y,
-                myPhotoViewObj.transform.localPosition.z,
-                myPhotoViewObj.transform.localRotation.w,
-                myPhotoViewObj.transform.localRotation.x,
-                myPhotoViewObj.transform.localRotation.y,
-                myPhotoViewObj.transform.localRotation.z,
-                curRecordStartTime,
-                curTime,
-                ref myGazeWriter,
-                "my_Eye_Gaze_Transforms"
-                );
-            if (otherPhotoViewObj != null)
-            {
-                saveTransformData(
-                    otherPhotoViewObj.transform.localPosition.x,
-                    otherPhotoViewObj.transform.localPosition.y,
-                    otherPhotoViewObj.transform.localPosition.z,
-                    otherPhotoViewObj.transform.localRotation.w,
-                    otherPhotoViewObj.transform.localRotation.x,
-                    otherPhotoViewObj.transform.localRotation.y,
-                    otherPhotoViewObj.transform.localRotation.z,
-                    curRecordStartTime,
-                    curTime,
-                    ref otherGazeWriter,
-                    "other_Eye_Gaze_Transforms"
-                );
-            }
+        RecordData();
 
-            if (screenObj != null)
-            {
-                saveTransformData(
-                    screenObj.transform.localPosition.x,
-                    screenObj.transform.localPosition.y,
-                    screenObj.transform.localPosition.z,
-                    screenObj.transform.localRotation.w,
-                    screenObj.transform.localRotation.x,
-                    screenObj.transform.localRotation.y,
-                    screenObj.transform.localRotation.z,
-                    curRecordStartTime,
-                    curTime,
-                    ref screenPosWriter,
-                    "screen_Track_Transforms"
-                );
-            }
-        }
+        //if (dispText != null && myPhotoViewObj != null)
+        //{
+        //    DateTime timestamp = DateTime.Now;
+        //    //var combinedGazereadingInWorldSpace = extendedEyeGazeDataProvider.GetWorldSpaceGazeReading(ExtendedEyeGazeDataProvider.GazeType.Combined, timestamp);
+        //    //var combinedGazeReadingInWorldSpace = extendedEyeGazeDataProvider.GetCameraSpaceGazeReading(ExtendedEyeGazeDataProvider.GazeType.Combined, timestamp);
+        //    //Debug.Log(combinedGazeReadingInWorldSpace.IsValid);
+        //    //Debug.Log(combinedGazeReadingInWorldSpace.EyePosition);
+        //    //Debug.Log(combinedGazeReadingInWorldSpace.GazeDirection);
+        //    // string curMsg = dispText.text;
+        //    //dispText.text = "";
+        //    //curMsg = curMsg + "\nRecording";
+        //    //dispText.text = combinedGazeReadingInWorldSpace.IsValid.ToString() + " " + combinedGazeReadingInWorldSpace.EyePosition.ToString();
+        //    //dispText.text += "\n";
+        //    //dispText.text += combinedGazeReadingInWorldSpace.GazeDirection.ToString();
+        //    dispText.text = myPhotoViewObj.transform.localPosition.ToString() ;
+        //    dispText.text += "\n";
+        //    dispText.text += myPhotoViewObj.transform.localRotation.ToString();
+        //}
     }
 
     public string getMyName()
@@ -243,7 +294,7 @@ public class GazeCursorController : MonoBehaviour
 
         long curUnixTime = ((DateTimeOffset)curTime).ToUnixTimeMilliseconds();
         string curUnixTimeString = curUnixTime.ToString();
-        
+
 
         if (isRecording)
         {
@@ -359,7 +410,7 @@ public class GazeCursorController : MonoBehaviour
         {
             return;
         }
-        
+
         isOtherCursorVisible = true;
         otherCursorStyle = newIdx % otherPhotoViewObj.transform.childCount;
         showCursorWReset(otherPhotoViewObj, otherCursorStyle);
@@ -390,7 +441,7 @@ public class GazeCursorController : MonoBehaviour
         Debug.Log("Updated Cursors' Scale to" + convertedScale.ToString());
     }
 
-    private void onToggleVisibility(GameObject cursorObj, bool curVisibility, int visibleChildIdx=0)
+    private void onToggleVisibility(GameObject cursorObj, bool curVisibility, int visibleChildIdx = 0)
     {
         if (curVisibility == true)
         {
@@ -427,12 +478,84 @@ public class GazeCursorController : MonoBehaviour
         showCursorNoReset(cursorObj, newIdx);
     }
 
+    private void RecordData()
+    {
+        if (isRecording)
+        {
+            // Data to Save:
+            // My Gaze, local to screen
+            // Other's Gaze, local to screen
+            // My Screen Position
+
+            DateTime curTime = DateTime.Now;
+            saveTransformData(
+                myPhotoViewObj.transform.localPosition.x,
+                myPhotoViewObj.transform.localPosition.y,
+                myPhotoViewObj.transform.localPosition.z,
+                myPhotoViewObj.transform.localRotation.w,
+                myPhotoViewObj.transform.localRotation.x,
+                myPhotoViewObj.transform.localRotation.y,
+                myPhotoViewObj.transform.localRotation.z,
+                curRecordStartTime,
+                curTime,
+                ref myGazeWriter,
+                "my_Eye_Gaze_Transforms"
+                );
+            if (otherPhotoViewObj != null)
+            {
+                saveTransformData(
+                    otherPhotoViewObj.transform.localPosition.x,
+                    otherPhotoViewObj.transform.localPosition.y,
+                    otherPhotoViewObj.transform.localPosition.z,
+                    otherPhotoViewObj.transform.localRotation.w,
+                    otherPhotoViewObj.transform.localRotation.x,
+                    otherPhotoViewObj.transform.localRotation.y,
+                    otherPhotoViewObj.transform.localRotation.z,
+                    curRecordStartTime,
+                    curTime,
+                    ref otherGazeWriter,
+                    "other_Eye_Gaze_Transforms"
+                );
+            }
+
+            if (screenObj != null)
+            {
+                saveTransformData(
+                    screenObj.transform.localPosition.x,
+                    screenObj.transform.localPosition.y,
+                    screenObj.transform.localPosition.z,
+                    screenObj.transform.localRotation.w,
+                    screenObj.transform.localRotation.x,
+                    screenObj.transform.localRotation.y,
+                    screenObj.transform.localRotation.z,
+                    curRecordStartTime,
+                    curTime,
+                    ref screenPosWriter,
+                    "screen_Track_Transforms"
+                );
+            }
+        }
+    }
+
+    IEnumerator SampleAndWriteData()
+    {
+        float interval = 1.0f / dataRecordingRate; //
+
+        while (true)
+        {
+            RecordData(); // Your method to sample and buffer data
+
+            yield return new WaitForSecondsRealtime(interval);
+        }
+    }
+
     public void startRecording()
     {
         if (isRecording)
         {
             return;
         }
+
         isRecording = true;
         if (buttonTMP != null)
         {
@@ -450,6 +573,16 @@ public class GazeCursorController : MonoBehaviour
         myGazeWriter = new System.IO.StreamWriter(myGazeFilePath, true);
         otherGazeWriter = new System.IO.StreamWriter(otherGazeFilePath, true);
         screenPosWriter = new System.IO.StreamWriter(screenPoseFilePath, true);
+
+        if (dispText != null)
+        {
+            // string curMsg = dispText.text;
+            //dispText.text = "";
+            //curMsg = curMsg + "\nRecording";
+            dispText.text = "Recording Gaze";
+        }
+
+        //recordingCoroutine = StartCoroutine(SampleAndWriteData());
     }
 
     public void stopRecording()
@@ -458,6 +591,8 @@ public class GazeCursorController : MonoBehaviour
         {
             return;
         }
+
+        //StopCoroutine(recordingCoroutine);
         recordingTrialCount++;
         isRecording = false;
         if (buttonTMP != null)
@@ -467,6 +602,15 @@ public class GazeCursorController : MonoBehaviour
         myGazeWriter?.Dispose();
         otherGazeWriter?.Dispose();
         screenPosWriter?.Dispose();
+
+        if (dispText != null)
+        {
+            // string curMsg = dispText.text;
+
+            // dispText.text = "";
+            // curMsg = curMsg.Split('\n')[0] + "\nRecording";
+            dispText.text = "Not Recording Gaze";
+        }
     }
 
     public void onToggleGazeRecording()
@@ -528,7 +672,7 @@ public class GazeCursorController : MonoBehaviour
         switch (topic)
         {
             case "DataCollection":
-                if(payload == "StartRecording")
+                if (payload == "StartRecording")
                 {
                     startRecording();
                 }
@@ -564,7 +708,8 @@ public class GazeCursorController : MonoBehaviour
         {
             controlMenu.SetActive(false);
             Debug.Log("Menu Hidden!");
-        } else
+        }
+        else
         {
             Debug.Log("Menu is Null, can't be hidden!");
         }
@@ -581,5 +726,30 @@ public class GazeCursorController : MonoBehaviour
         {
             Debug.Log("Menu is Null, can't be shown!");
         }
+    }
+}
+
+
+public static class StringComparerHelper
+{
+    public static byte[] HashStringSHA256(string input)
+    {
+        using (SHA256 sha256 = SHA256.Create())
+        {
+            return sha256.ComputeHash(Encoding.UTF8.GetBytes(input));
+        }
+    }
+
+    public static int CompareHashedStrings(string a, string b)
+    {
+        byte[] hashA = HashStringSHA256(a);
+        byte[] hashB = HashStringSHA256(b);
+
+        for (int i = 0; i < hashA.Length; i++)
+        {
+            if (hashA[i] < hashB[i]) return -1;
+            if (hashA[i] > hashB[i]) return 1;
+        }
+        return 0;
     }
 }

@@ -11,6 +11,7 @@ public class NetMQManager : MonoBehaviour
     private Thread listenerThread;
     private bool listenerRunning = true;
     private SubscriberSocket subscriberSocket;
+    [SerializeField] public AppConfig appConfig;
 
     private ConcurrentQueue<string> messageQueue = new ConcurrentQueue<string>();
 
@@ -84,10 +85,23 @@ public class NetMQManager : MonoBehaviour
         string[] subtopics = topic.Split("/");
         if (subtopics.Length < 1) return;
 
-        string myName = $"{gazeCursorController.getMyName()}";
-        if (!(subtopics[0].StartsWith(myName) || subtopics.Length == 1)) return;
+        if (int.TryParse(subtopics[0][4..], out int targetUserId))
+        {
+            Debug.Log("Received Command for User " + targetUserId);
+            if (!((gazeCursorController.amIPrimaryUser && targetUserId == 1) || (!gazeCursorController.amIPrimaryUser && targetUserId == 2)))
+            {
+                return;
+            }
+        }
+        else if (subtopics.Length != 1)
+        {
+            return;
+        }
 
-        switch (subtopics[subtopics.Length-1])
+        //string myName = $"{gazeCursorController.getMyName()}";
+        //if (!(subtopics[0].StartsWith(myName) || subtopics.Length == 1)) return;
+
+        switch (subtopics[subtopics.Length - 1])
         {
             case "DataCollection":
                 HandleDataCollectionSignal(payload);
@@ -99,9 +113,10 @@ public class NetMQManager : MonoBehaviour
                     if (user1Style == 0)
                     {
                         gazeCursorController.hideMyCursor();
-                    } else
+                    }
+                    else
                     {
-                        gazeCursorController.updateMyCursorStyle(user1Style-1);
+                        gazeCursorController.updateMyCursorStyle(user1Style - 1);
                     }
                 }
                 break;
@@ -111,15 +126,64 @@ public class NetMQManager : MonoBehaviour
                     if (user2Style == 0)
                     {
                         gazeCursorController.hideOtherCursor();
-                    } else
+                    }
+                    else
                     {
-                        gazeCursorController.updateOtherCursorStyle(user2Style-1);
+                        gazeCursorController.updateOtherCursorStyle(user2Style - 1);
                     }
                 }
                 break;
             case "CursorSize":
                 if (float.TryParse(payload, out float cursorSize))
                     gazeCursorController.setCursorScale(cursorSize);
+                break;
+            case "AppOperation":
+                if (payload == "Start")
+                {
+                    Debug.Log("Start Operation");
+                    appConfig.appOperation = true;
+                }
+                else if (payload == "Stop")
+                {
+                    Debug.Log("End Operation");
+                    appConfig.appOperation = false;
+                }
+                break;
+            case "ArUcoOperation":
+                if (payload == "Start")
+                {
+                    Debug.Log("Start Operation");
+                    appConfig.arUcoOperation = true;
+                }
+                else if (payload == "Stop")
+                {
+                    Debug.Log("End Operation");
+                    appConfig.arUcoOperation = false;
+                }
+                break;
+            case "GazeShareOperation":
+                if (payload == "Start")
+                {
+                    Debug.Log("Start Operation");
+                    appConfig.gazeShareOperation = true;
+                }
+                else if (payload == "Stop")
+                {
+                    Debug.Log("End Operation");
+                    appConfig.gazeShareOperation = false;
+                }
+                break;
+            case "GazeSaveOperation":
+                if (payload == "Start")
+                {
+                    Debug.Log("Start Operation");
+                    appConfig.gazeSaveOperation = true;
+                }
+                else if (payload == "Stop")
+                {
+                    Debug.Log("End Operation");
+                    appConfig.gazeSaveOperation = false;
+                }
                 break;
             default:
                 Debug.LogWarning($"Unknown topic: {subtopics[subtopics.Length - 1]}");
