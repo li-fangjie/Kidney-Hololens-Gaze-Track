@@ -204,7 +204,7 @@ public class ExtendedEyeGazeDataProvider : MonoBehaviour
             }
 
             // Set to second highest framerate, it is 60FPS at this time (30, 60, 90)
-            _eyeGazeTracker.SetTargetFrameRate(supportedFrameRates[supportedFrameRates.Count - 2]);
+            _eyeGazeTracker.SetTargetFrameRate(supportedFrameRates[supportedFrameRates.Count - 3]);
             _eyeGazeTrackerNode = SpatialGraphNode.FromDynamicNodeId(e.TrackerSpaceLocatorNodeId);
         }
         catch (Exception ex)

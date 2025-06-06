@@ -194,7 +194,7 @@ namespace MRTK.Tutorials.MultiUserCapabilities
 
 
         // private void FixedUpdate()
-        private void FixedUpdate()
+        private void Update()
         {
             if (appConfig != null && (appConfig.appOperation == false || appConfig.gazeShareOperation == false))
             {

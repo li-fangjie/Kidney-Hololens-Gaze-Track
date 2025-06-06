@@ -71,7 +71,7 @@ public class GazeCursorController : MonoBehaviour
     {
         AsyncIO.ForceDotNet.Force();
 
-        Time.fixedDeltaTime = 0.015f; //0.016667f; // 0.011111f;
+        Time.fixedDeltaTime = 0.01667f; //0.016667f; // 0.011111f;
         // Application.targetFrameRate = -1;
         cursorScaleGradient = cursorScaleMax - cursorScaleMin;
         float curScaleValue = (1 - cursorScaleMin) / cursorScaleGradient;
