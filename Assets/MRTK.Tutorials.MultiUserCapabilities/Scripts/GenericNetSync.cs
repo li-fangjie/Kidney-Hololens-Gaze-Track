@@ -54,7 +54,7 @@ namespace MRTK.Tutorials.MultiUserCapabilities
         private void Start()
         {
             PhotonNetwork.SerializationRate = 30;
-            PhotonNetwork.SendRate = 30;
+            PhotonNetwork.SendRate = 3;
             Cursor = GameObject.Find("DefaultGazeCursorCloseSurface_Invisible(Clone)");
             parentObj = GameObject.Find("ScreenObject");
             ScreenObj = GameObject.Find("ScreenObject");
