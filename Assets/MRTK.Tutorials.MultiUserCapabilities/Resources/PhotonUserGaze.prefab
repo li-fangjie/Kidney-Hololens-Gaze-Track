@@ -64,9 +64,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   isUser: 1
   defaultDistanceInMeters: 3
-  extendedEyeGazeDataProvider: {fileID: 0}
-  deviceName: 
-  appConfig: {fileID: 0}
   parentObj: {fileID: 0}
   ScreenObj: {fileID: 0}
   Cursor: {fileID: 0}

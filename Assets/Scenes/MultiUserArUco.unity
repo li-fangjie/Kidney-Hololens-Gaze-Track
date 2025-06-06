@@ -2784,10 +2784,8 @@ GameObject:
   - component: {fileID: 805832269}
   - component: {fileID: 805832268}
   - component: {fileID: 805832270}
-  - component: {fileID: 805832271}
   - component: {fileID: 805832272}
   - component: {fileID: 805832273}
-  - component: {fileID: 805832274}
   m_Layer: 0
   m_Name: ArucoTrackingScriptHolder
   m_TagString: Untagged
@@ -2974,18 +2972,6 @@ MonoBehaviour:
           m_CallState: 2
   persistentKeywords: 0
   speechConfirmationTooltipPrefab: {fileID: 0}
---- !u!114 &805832271
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 805832262}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 62cfd34519251814dba3a62b334333f5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &805832272
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3015,19 +3001,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 145c5b1684dd9ee4aac441c5e185335b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &805832274
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 805832262}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 47b0d5d99c42ffb4aa6511c8d7eeac3f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  thermalText: {fileID: 1662917533}
 --- !u!1001 &812809156
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5205,7 +5178,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1662917532
 RectTransform:
   m_ObjectHideFlags: 0

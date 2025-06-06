@@ -8,18 +8,15 @@ using UnityEngine;
 namespace MRTK.Tutorials.MultiUserCapabilities
 {
     // Responsible for managing the objects of each user.
-    public class GenericNetSync : MonoBehaviourPun, IPunObservable
+    public class GenericNetSync: MonoBehaviourPun, IPunObservable
     {
         [SerializeField] private bool isUser = default;
         [SerializeField] private float defaultDistanceInMeters = 3;
-        public ExtendedEyeGazeDataProvider extendedEyeGazeDataProvider;
-        [HideInInspector] public string deviceName;
-        public AppConfig appConfig;
-
         public GameObject parentObj = default;
         public GameObject ScreenObj = default;
         private GameObject ScreenQuadFront = default;
         private GameObject ScreenQuadBack = default;
+        private bool newDataToBeSent = false;
 
         public GameObject Cursor;
 
@@ -32,7 +29,6 @@ namespace MRTK.Tutorials.MultiUserCapabilities
         private Quaternion startingLocalRotation;
 
         private Vector3 lastHitPos = default;
-        private bool newDataToBeSent = false;
 
         void IPunObservable.OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
         {
@@ -57,21 +53,16 @@ namespace MRTK.Tutorials.MultiUserCapabilities
 
         private void Start()
         {
-            deviceName = SystemInfo.deviceName;
             PhotonNetwork.SerializationRate = 30;
-            PhotonNetwork.SendRate = 3;
+            PhotonNetwork.SendRate = 30;
             Cursor = GameObject.Find("DefaultGazeCursorCloseSurface_Invisible(Clone)");
-            extendedEyeGazeDataProvider = GameObject.Find("ArucoTrackingScriptHolder").GetComponent<ExtendedEyeGazeDataProvider>();
-            appConfig = GameObject.Find("ArucoTrackingScriptHolder").GetComponent<AppConfig>();
             parentObj = GameObject.Find("ScreenObject");
             ScreenObj = GameObject.Find("ScreenObject");
+            lastHitPos = Vector3.zero;
+
             ScreenQuadFront = GameObject.Find("ScreenSurfaceQuad (1)");
             ScreenQuadBack = GameObject.Find("ScreenSurfaceQuad");
 
-            lastHitPos = Vector3.zero;
-            newDataToBeSent = false;
-
-            Debug.Log(extendedEyeGazeDataProvider);
             if (isUser)
             {
                 if (parentObj != null)
@@ -91,61 +82,7 @@ namespace MRTK.Tutorials.MultiUserCapabilities
             networkLocalRotation = startingLocalRotation;
         }
 
-        public static bool GetLocalHitOnPlane(GameObject planeObjectFront, GameObject planeObjectBack, GameObject planeObjectParent, Vector3 rayOrigin, Vector3 rayDirection, out Vector3 localHitPosition, out Quaternion planeRotation)
-        {
-            localHitPosition = Vector3.zero;
-            planeRotation = Quaternion.identity;
-
-            // Build the ray
-            Ray ray = new Ray(rayOrigin, rayDirection.normalized);
-
-            // Check if the GameObject has a collider
-            Collider colliderFront = planeObjectFront.GetComponent<Collider>();
-            if (colliderFront == null)
-            {
-                Debug.LogWarning("The plane GameObject has no collider.");
-            }
-            else
-            {
-                // Raycast against the collider
-                if (colliderFront.Raycast(ray, out RaycastHit hitInfo, Mathf.Infinity))
-                {
-                    //Debug.Log("Front Hit");
-                    // Convert hit point to local coordinates
-                    localHitPosition = planeObjectParent.transform.InverseTransformPoint(hitInfo.point);
-
-                    // Get the plane's rotation in world space
-                    planeRotation = Quaternion.Inverse(planeObjectParent.transform.rotation) * planeObjectFront.transform.rotation;
-
-                    return true;
-                }
-            }
-
-            Collider colliderBack = planeObjectBack.GetComponent<Collider>();
-            if (colliderBack == null)
-            {
-                Debug.LogWarning("The plane GameObject has no collider.");
-            }
-            else
-            {
-                if (colliderBack.Raycast(ray, out RaycastHit hitInfoBack, Mathf.Infinity))
-                {
-                    //Debug.Log("Back Hit");
-                    // Convert hit point to local coordinates
-                    localHitPosition = planeObjectParent.transform.InverseTransformPoint(hitInfoBack.point);
-
-                    // Get the plane's rotation in world space
-                    planeRotation = Quaternion.Inverse(planeObjectParent.transform.rotation) * planeObjectBack.transform.rotation;
-
-                    return true;
-                }
-            }
-
-
-            return false; // No hit
-        }
-
-
+        // private void FixedUpdate()
         public static bool GetLocalHitOnPlanePlaneBased(GameObject planeObjectFront, GameObject planeObjectBack, GameObject planeObjectParent, Vector3 rayOrigin, Vector3 rayDirection, out Vector3 localHitPosition, out Quaternion planeRotation)
         {
             localHitPosition = Vector3.zero;
@@ -194,13 +131,8 @@ namespace MRTK.Tutorials.MultiUserCapabilities
 
 
         // private void FixedUpdate()
-        private void Update()
+        private void FixedUpdate()
         {
-            if (appConfig != null && (appConfig.appOperation == false || appConfig.gazeShareOperation == false))
-            {
-                //Debug.Log("Not sharing gaze");
-                return;
-            }
             if (!photonView.IsMine)
             {
                 transform.localPosition = networkLocalPosition;
@@ -209,32 +141,6 @@ namespace MRTK.Tutorials.MultiUserCapabilities
 
             if (photonView.IsMine && isUser)
             {
-
-#if ENABLE_WINMD_SUPPORT
-                System.DateTime timestamp = System.DateTime.Now;
-                var combinedGazeReadingInWorldSpace = extendedEyeGazeDataProvider.GetWorldSpaceGazeReading(ExtendedEyeGazeDataProvider.GazeType.Combined, timestamp);
-                //var combinedGazeReadingInWorldSpace = extendedEyeGazeDataProvider.GetCameraSpaceGazeReading(ExtendedEyeGazeDataProvider.GazeType.Combined, timestamp);
-
-                if (combinedGazeReadingInWorldSpace.IsValid)
-                {
-                    //Debug.Log($"Successful Extended Gaze Read at: {timestamp.ToFileTimeUtc()}");
-                    if (GetLocalHitOnPlanePlaneBased(ScreenQuadFront, ScreenQuadBack, ScreenObj, combinedGazeReadingInWorldSpace.EyePosition, combinedGazeReadingInWorldSpace.GazeDirection, out Vector3 localHitPosition, out Quaternion planeRotation))
-                    {
-                        if (!(transform.localPosition == localHitPosition && transform.localRotation == planeRotation))
-                        {
-                            newDataToBeSent = true;
-                            transform.localPosition = localHitPosition;  // ScreenObj.transform.InverseTransformPoint(localHitPosition);
-                                                                         //transform.localRotation = Quaternion.Inverse(ScreenObj.transform.rotation) * Quaternion.LookRotation(gazeProvider.HitNormal, Vector3.up);
-                            transform.localRotation = planeRotation; // Quaternion.Inverse(ScreenObj.transform.rotation) * planeRotation;
-                        } else
-                        {
-                            //Debug.Log("Current update same as before");
-                        }
-                        
-                    }
-                }
-
-#else
                 var gazeProvider = CoreServices.InputSystem?.EyeGazeProvider;
                 if (gazeProvider != null)
                 {
@@ -254,11 +160,6 @@ namespace MRTK.Tutorials.MultiUserCapabilities
 
                     }
                 }
-#endif
-
-
-
-
             }
         }
     }
