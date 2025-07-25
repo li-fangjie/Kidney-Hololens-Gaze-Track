@@ -2,7 +2,6 @@ using Microsoft.MixedReality.Toolkit;
 using Microsoft.MixedReality.Toolkit.Input;
 using Microsoft.MixedReality.Toolkit.Utilities;
 using Photon.Pun;
-using Photon.Realtime;  // Needed for DisconnectCause
 using System.IO;
 using UnityEngine;
 
@@ -11,99 +10,156 @@ namespace MRTK.Tutorials.MultiUserCapabilities
     // Responsible for managing the objects of each user.
     public class GenericNetSync : MonoBehaviourPun, IPunObservable
     {
+        [SerializeField] private bool isUser = default;
+        [SerializeField] private float defaultDistanceInMeters = 3;
+        public GameObject parentObj = default;
+        public GameObject ScreenObj = default;
+        private GameObject ScreenQuadFront = default;
+        private GameObject ScreenQuadBack = default;
+        private bool newDataToBeSent = false;
+
+        public GameObject Cursor;
+
+        private Camera mainCamera;
+
         private Vector3 networkLocalPosition;
         private Quaternion networkLocalRotation;
 
         private Vector3 startingLocalPosition;
         private Quaternion startingLocalRotation;
 
-        private GameObject Cursor;
-        private GameObject parentObj;
-        private GameObject ScreenObj;
-        private GameObject ScreenQuadFront;
-        private GameObject ScreenQuadBack;
-        private Vector3 lastHitPos = Vector3.zero;
+        private Vector3 lastHitPos = default;
 
-        public bool isUser = true;
+        void IPunObservable.OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+        {
+            if (stream.IsWriting)
+            {
+                if (newDataToBeSent == true)
+                {
+                    newDataToBeSent = false;
+                    Debug.Log("OnPhotonSerializeView Writing");
+                    stream.SendNext(transform.localPosition);
+                    stream.SendNext(transform.localRotation);
+
+                }
+            }
+            else
+            {
+                //Debug.Log("OnPhotonSerializeView Receiving");
+                networkLocalPosition = (Vector3)stream.ReceiveNext();
+                networkLocalRotation = (Quaternion)stream.ReceiveNext();
+            }
+        }
 
         private void Start()
         {
-            // Set Photon network rates
             PhotonNetwork.SerializationRate = 30;
             PhotonNetwork.SendRate = 3;
-
-            // Find cursor
             Cursor = GameObject.Find("DefaultGazeCursorCloseSurface_Invisible(Clone)");
-            if (Cursor == null)
-                Debug.LogWarning("[GenericNetSync] Cursor not found. Gaze interaction may not work.");
-
-            // Find main screen object and parent
             parentObj = GameObject.Find("ScreenObject");
-            ScreenObj = parentObj;
-            if (parentObj == null || ScreenObj == null)
-                Debug.LogWarning("[GenericNetSync] ScreenObject not found. This may break scene placement or gaze alignment.");
-
-            // Find front and back quads for screen plane
-            ScreenQuadFront = GameObject.Find("ScreenSurfaceQuad (1)");
-            ScreenQuadBack = GameObject.Find("ScreenSurfaceQuad");
-            if (ScreenQuadFront == null || ScreenQuadBack == null)
-                Debug.LogWarning("[GenericNetSync] ScreenSurfaceQuads not found. Plane-based gaze projection may fail.");
-
+            ScreenObj = GameObject.Find("ScreenObject");
             lastHitPos = Vector3.zero;
 
-            // Only do these things if this instance represents the local user
+            ScreenQuadFront = GameObject.Find("ScreenSurfaceQuad (1)");
+            ScreenQuadBack = GameObject.Find("ScreenSurfaceQuad");
+
             if (isUser)
             {
                 if (parentObj != null)
                 {
                     transform.parent = parentObj.transform;
                 }
+                // if (TableAnchor.Instance != null) transform.parent = FindObjectOfType<TableAnchor>().transform;
 
-                if (photonView.IsMine)
-                {
-                    if (GenericNetworkManager.Instance != null)
-                    {
-                        GenericNetworkManager.Instance.localUser = photonView;
-                    }
-                    else
-                    {
-                        Debug.LogWarning("[GenericNetSync] GenericNetworkManager.Instance is null. Could not assign localUser.");
-                    }
-                }
+                if (photonView.IsMine) GenericNetworkManager.Instance.localUser = photonView;
             }
 
-            // Store initial transforms
-            startingLocalPosition = transform.localPosition;
-            startingLocalRotation = transform.localRotation;
+            var trans = transform;
+            startingLocalPosition = trans.localPosition;
+            startingLocalRotation = trans.localRotation;
 
             networkLocalPosition = startingLocalPosition;
             networkLocalRotation = startingLocalRotation;
         }
 
-        // Implement IPunObservable for syncing transform data across the network
-        public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+        // private void FixedUpdate()
+        public static bool GetLocalHitOnPlanePlaneBased(GameObject planeObjectFront, GameObject planeObjectBack, GameObject planeObjectParent, Vector3 rayOrigin, Vector3 rayDirection, out Vector3 localHitPosition, out Quaternion planeRotation)
         {
-            if (stream.IsWriting)
+            localHitPosition = Vector3.zero;
+            planeRotation = Quaternion.identity;
+
+            // Build the ray
+            Ray ray = new Ray(rayOrigin, rayDirection.normalized);
+
+            Plane screenPlane = new Plane(planeObjectFront.transform.forward, planeObjectFront.transform.position);
+            if (screenPlane.Raycast(ray, out float hitPosParam))
             {
-                // Send current transform to other clients
-                stream.SendNext(transform.localPosition);
-                stream.SendNext(transform.localRotation);
+                //Debug.Log("Back Hit");
+                // Convert hit point to local coordinates
+                localHitPosition = planeObjectParent.transform.InverseTransformPoint(ray.GetPoint(hitPosParam));
+
+                if (!IsPointInFrontOfQuad(planeObjectFront, rayOrigin))
+                {
+                    planeRotation = Quaternion.Inverse(planeObjectParent.transform.rotation) * planeObjectFront.transform.rotation;
+                }
+                else
+                {
+                    planeRotation = Quaternion.Inverse(planeObjectParent.transform.rotation) * planeObjectBack.transform.rotation;
+                }
+                // Get the plane's rotation in world space
+
+                return true;
             }
-            else
-            {
-                // Receive data and update local variables for interpolation
-                networkLocalPosition = (Vector3)stream.ReceiveNext();
-                networkLocalRotation = (Quaternion)stream.ReceiveNext();
-            }
+
+
+            return false; // No hit
         }
 
-        private void Update()
+        public static bool IsPointInFrontOfQuad(GameObject quadObject, Vector3 point)
         {
-            // For remote objects, smooth the position and rotation updates
+            Vector3 quadPosition = quadObject.transform.position;
+            Vector3 quadForward = quadObject.transform.forward;
+
+            // Direction from quad to point
+            Vector3 toPoint = point - quadPosition;
+
+            // Dot product: positive if on the forward side
+            float dot = Vector3.Dot(quadForward, toPoint);
+
+            return dot > 0f;
+        }
+
+
+        // private void FixedUpdate()
+        private void FixedUpdate()
+        {
             if (!photonView.IsMine)
             {
-                transform.localPosition = Vector3.Lerp(transform.localPosition, networkLocalPosition, Time.deltaTime * 10);
-                transform.localRotation = Quaternion.Slerp(transform.localRotation, networkLocalRotation, Time.deltaTime * 10);
+                transform.localPosition = networkLocalPosition;
+                transform.localRotation = networkLocalRotation;
+            }
+
+            if (photonView.IsMine && isUser)
+            {
+                var gazeProvider = CoreServices.InputSystem?.EyeGazeProvider;
+                if (gazeProvider != null)
+                {
+                    if (GetLocalHitOnPlanePlaneBased(ScreenQuadFront, ScreenQuadBack, ScreenObj, gazeProvider.GazeOrigin, gazeProvider.GazeDirection, out Vector3 localHitPosition, out Quaternion planeRotation))
+                    {
+                        if (!(transform.localPosition == localHitPosition && transform.localRotation == planeRotation))
+                        {
+                            newDataToBeSent = true;
+                            transform.localPosition = localHitPosition;  // ScreenObj.transform.InverseTransformPoint(localHitPosition);
+                                                                         //transform.localRotation = Quaternion.Inverse(ScreenObj.transform.rotation) * Quaternion.LookRotation(gazeProvider.HitNormal, Vector3.up);
+                            transform.localRotation = planeRotation; // Quaternion.Inverse(ScreenObj.transform.rotation) * planeRotation;
+                        }
+                        else
+                        {
+                            //Debug.Log("Current update same as before");
+                        }
+
+                    }
+                }
             }
         }
     }

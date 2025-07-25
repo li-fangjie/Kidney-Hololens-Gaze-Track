@@ -5,7 +5,7 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/ArUcoDetection.unity
     guid: 3cdb34f46fa09784ca859acf27c3af29
   - enabled: 0

@@ -14,8 +14,13 @@ public class NetMQManager : MonoBehaviour
     [SerializeField] public AppConfig appConfig;
 
     private ConcurrentQueue<string> messageQueue = new ConcurrentQueue<string>();
+    private string connectionAddress = "tcp://192.168.0.10:7788";
 
-    private string connectionAddress = "tcp://192.168.0.10:7788"; // Change as needed
+    private bool isConnected = false;
+
+    // Public events
+    public static event Action OnNetMQConnected;
+    public static event Action OnNetMQDisconnected;
 
     void Start()
     {
@@ -41,7 +46,7 @@ public class NetMQManager : MonoBehaviour
 
     private void ListenerLoop()
     {
-        AsyncIO.ForceDotNet.Force(); // Ensure proper cleanup of sockets
+        AsyncIO.ForceDotNet.Force();
 
         while (listenerRunning)
         {
@@ -54,25 +59,57 @@ public class NetMQManager : MonoBehaviour
                     subscriberSocket.SubscribeToAnyTopic();
 
                     Debug.Log("[NetMQ] Connected to " + connectionAddress);
+                    UpdateConnectionState(true); // Signal connected
 
-                    while (listenerRunning)
+                    while (listenerRunning && subscriberSocket != null)
                     {
-                        if (subscriberSocket.TryReceiveFrameString(TimeSpan.FromMilliseconds(100), out string recv))
+                        try
                         {
-                            messageQueue.Enqueue(recv);
+                            if (subscriberSocket.TryReceiveFrameString(TimeSpan.FromMilliseconds(100), out string recv))
+                            {
+                                messageQueue.Enqueue(recv);
+                            }
+                        }
+                        catch (Exception innerEx)
+                        {
+                            Debug.LogWarning("[NetMQ] Receive error: " + innerEx.Message);
+                            break;
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                Debug.LogWarning("[NetMQ] Connection failed or interrupted: " + ex.Message);
-                Thread.Sleep(5000); // Wait before retrying
-                Debug.Log("[NetMQ] Retrying connection...");
+                Debug.LogWarning("[NetMQ] Connection failed: " + ex.Message);
+            }
+
+            if (listenerRunning)
+            {
+                UpdateConnectionState(false); //  Signal disconnected
+                Debug.Log("[NetMQ] Retrying connection in 5 seconds...");
+                Thread.Sleep(5000);
             }
         }
 
         NetMQConfig.Cleanup();
+    }
+
+    private void UpdateConnectionState(bool connectedNow)
+    {
+        if (connectedNow != isConnected)
+        {
+            isConnected = connectedNow;
+            if (isConnected)
+            {
+                Debug.Log("[NetMQ] Connection established.");
+                OnNetMQConnected?.Invoke();
+            }
+            else
+            {
+                Debug.LogWarning("[NetMQ] Connection lost.");
+                OnNetMQDisconnected?.Invoke();
+            }
+        }
     }
 
     private void ProcessMessage(string message)
@@ -84,7 +121,6 @@ public class NetMQManager : MonoBehaviour
 
         string topic = parts[0].Trim();
         string payload = parts[1].Trim();
-
         string[] subtopics = topic.Split('/');
         if (subtopics.Length < 1) return;
 
@@ -163,6 +199,7 @@ public class NetMQManager : MonoBehaviour
         listenerRunning = false;
         listenerThread?.Join();
         subscriberSocket?.Close();
+        subscriberSocket?.Dispose();
         NetMQConfig.Cleanup(false);
     }
 
@@ -171,6 +208,7 @@ public class NetMQManager : MonoBehaviour
         listenerRunning = false;
         listenerThread?.Join();
         subscriberSocket?.Close();
+        subscriberSocket?.Dispose();
         NetMQConfig.Cleanup(false);
     }
 }

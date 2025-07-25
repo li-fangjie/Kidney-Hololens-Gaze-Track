@@ -63,6 +63,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isUser: 1
+  defaultDistanceInMeters: 3
+  parentObj: {fileID: 0}
+  ScreenObj: {fileID: 0}
+  Cursor: {fileID: 0}
 --- !u!114 &3000569307421430845
 MonoBehaviour:
   m_ObjectHideFlags: 0
