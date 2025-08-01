@@ -20,8 +20,12 @@ This Unity project is a key component of the Eye Gaze Share platform. It enables
 
 If you are looking for the **data processing and gaze metrics computation scripts**, please see:
 
-🔗 [Gaze Data Processing & Metric Analysis](https://github.com/jatoum/Eye_Gaze_Metric_Analysis)  
+- **[Gaze Data Processing & Metric Analysis](https://github.com/jatoum/Eye_Gaze_Metric_Analysis)  
 (This companion repository includes Python scripts for analyzing gaze patterns, calculating fixation metrics, and visualizing gaze behavior.)
+
+- **[Kidney Gaze User Study Tools](https://github.com/li-fangjie/Kidney-Gaze-User-Study-Tools):**  
+  Tools used in the user study for collecting gaze data during studies.
+
 
 ## Setup Instructions
 
