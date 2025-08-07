@@ -23,6 +23,7 @@ using UnityEngine.UI;
 
 public class GazeCursorController : MonoBehaviour
 {
+    [SerializeField] public GameObject myGazeSelfTrackObj = default;
     [SerializeField] public float cursorScaleMax = 2.5f;
     [SerializeField] public float cursorScaleMin = 0.5f;
     [SerializeField] public GameObject slider;
@@ -486,22 +487,28 @@ public class GazeCursorController : MonoBehaviour
             // My Gaze, local to screen
             // Other's Gaze, local to screen
             // My Screen Position
-
             DateTime curTime = DateTime.Now;
-            saveTransformData(
-                myPhotoViewObj.transform.localPosition.x,
-                myPhotoViewObj.transform.localPosition.y,
-                myPhotoViewObj.transform.localPosition.z,
-                myPhotoViewObj.transform.localRotation.w,
-                myPhotoViewObj.transform.localRotation.x,
-                myPhotoViewObj.transform.localRotation.y,
-                myPhotoViewObj.transform.localRotation.z,
-                curRecordStartTime,
-                curTime,
-                ref myGazeWriter,
-                "my_Eye_Gaze_Transforms"
-                );
-            if (otherPhotoViewObj != null)
+            if (myGazeSelfTrackObj)
+            {
+                saveTransformData(
+                    myGazeSelfTrackObj.transform.localPosition.x,
+                    myGazeSelfTrackObj.transform.localPosition.y,
+                    myGazeSelfTrackObj.transform.localPosition.z,
+                    myGazeSelfTrackObj.transform.localRotation.w,
+                    myGazeSelfTrackObj.transform.localRotation.x,
+                    myGazeSelfTrackObj.transform.localRotation.y,
+                    myGazeSelfTrackObj.transform.localRotation.z,
+                    curRecordStartTime,
+                    curTime,
+                    ref myGazeWriter,
+                    "my_Eye_Gaze_Transforms"
+                    );
+            } else
+            {
+                Debug.Log("My Photon Obj Null");
+            }
+
+            if (otherPhotoViewObj)
             {
                 saveTransformData(
                     otherPhotoViewObj.transform.localPosition.x,
@@ -516,9 +523,12 @@ public class GazeCursorController : MonoBehaviour
                     ref otherGazeWriter,
                     "other_Eye_Gaze_Transforms"
                 );
+            } else
+            {
+                Debug.Log("Other Photon Obj Null");
             }
 
-            if (screenObj != null)
+            if (screenObj)
             {
                 saveTransformData(
                     screenObj.transform.localPosition.x,
@@ -533,6 +543,9 @@ public class GazeCursorController : MonoBehaviour
                     ref screenPosWriter,
                     "screen_Track_Transforms"
                 );
+            } else
+            {
+                Debug.Log("screenObj Null");
             }
         }
     }

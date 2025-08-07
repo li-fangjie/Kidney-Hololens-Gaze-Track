@@ -11,16 +11,9 @@ namespace MRTK.Tutorials.MultiUserCapabilities
     public class GenericNetSync : MonoBehaviourPun, IPunObservable
     {
         [SerializeField] private bool isUser = default;
-        [SerializeField] private float defaultDistanceInMeters = 3;
+        [SerializeField] private GameObject selfCursorObj = default;
+        [SerializeField] private GameObject scriptHolder = default;
         public GameObject parentObj = default;
-        public GameObject ScreenObj = default;
-        private GameObject ScreenQuadFront = default;
-        private GameObject ScreenQuadBack = default;
-        private bool newDataToBeSent = false;
-
-        public GameObject Cursor;
-
-        private Camera mainCamera;
 
         private Vector3 networkLocalPosition;
         private Quaternion networkLocalRotation;
@@ -28,15 +21,14 @@ namespace MRTK.Tutorials.MultiUserCapabilities
         private Vector3 startingLocalPosition;
         private Quaternion startingLocalRotation;
 
-        private Vector3 lastHitPos = default;
 
         void IPunObservable.OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
         {
             if (stream.IsWriting)
             {
-                if (newDataToBeSent == true)
+                if (scriptHolder.GetComponent<GazeTracker>().newDataToBeSent == true)
                 {
-                    newDataToBeSent = false;
+                    scriptHolder.GetComponent<GazeTracker>().newDataToBeSent = false;
                     Debug.Log("OnPhotonSerializeView Writing");
                     stream.SendNext(transform.localPosition);
                     stream.SendNext(transform.localRotation);
@@ -55,13 +47,9 @@ namespace MRTK.Tutorials.MultiUserCapabilities
         {
             PhotonNetwork.SerializationRate = 30;
             PhotonNetwork.SendRate = 3;
-            Cursor = GameObject.Find("DefaultGazeCursorCloseSurface_Invisible(Clone)");
             parentObj = GameObject.Find("ScreenObject");
-            ScreenObj = GameObject.Find("ScreenObject");
-            lastHitPos = Vector3.zero;
-
-            ScreenQuadFront = GameObject.Find("ScreenSurfaceQuad (1)");
-            ScreenQuadBack = GameObject.Find("ScreenSurfaceQuad");
+            selfCursorObj = GameObject.Find("SelfGazeObj");
+            scriptHolder = GameObject.Find("ArucoTrackingScriptHolder");
 
             if (isUser)
             {
@@ -83,51 +71,6 @@ namespace MRTK.Tutorials.MultiUserCapabilities
         }
 
         // private void FixedUpdate()
-        public static bool GetLocalHitOnPlanePlaneBased(GameObject planeObjectFront, GameObject planeObjectBack, GameObject planeObjectParent, Vector3 rayOrigin, Vector3 rayDirection, out Vector3 localHitPosition, out Quaternion planeRotation)
-        {
-            localHitPosition = Vector3.zero;
-            planeRotation = Quaternion.identity;
-
-            // Build the ray
-            Ray ray = new Ray(rayOrigin, rayDirection.normalized);
-
-            Plane screenPlane = new Plane(planeObjectFront.transform.forward, planeObjectFront.transform.position);
-            if (screenPlane.Raycast(ray, out float hitPosParam))
-            {
-                //Debug.Log("Back Hit");
-                // Convert hit point to local coordinates
-                localHitPosition = planeObjectParent.transform.InverseTransformPoint(ray.GetPoint(hitPosParam));
-
-                if (!IsPointInFrontOfQuad(planeObjectFront, rayOrigin))
-                {
-                    planeRotation = Quaternion.Inverse(planeObjectParent.transform.rotation) * planeObjectFront.transform.rotation;
-                }
-                else
-                {
-                    planeRotation = Quaternion.Inverse(planeObjectParent.transform.rotation) * planeObjectBack.transform.rotation;
-                }
-                // Get the plane's rotation in world space
-
-                return true;
-            }
-
-
-            return false; // No hit
-        }
-
-        public static bool IsPointInFrontOfQuad(GameObject quadObject, Vector3 point)
-        {
-            Vector3 quadPosition = quadObject.transform.position;
-            Vector3 quadForward = quadObject.transform.forward;
-
-            // Direction from quad to point
-            Vector3 toPoint = point - quadPosition;
-
-            // Dot product: positive if on the forward side
-            float dot = Vector3.Dot(quadForward, toPoint);
-
-            return dot > 0f;
-        }
 
 
         // private void FixedUpdate()
@@ -141,25 +84,8 @@ namespace MRTK.Tutorials.MultiUserCapabilities
 
             if (photonView.IsMine && isUser)
             {
-                var gazeProvider = CoreServices.InputSystem?.EyeGazeProvider;
-                if (gazeProvider != null)
-                {
-                    if (GetLocalHitOnPlanePlaneBased(ScreenQuadFront, ScreenQuadBack, ScreenObj, gazeProvider.GazeOrigin, gazeProvider.GazeDirection, out Vector3 localHitPosition, out Quaternion planeRotation))
-                    {
-                        if (!(transform.localPosition == localHitPosition && transform.localRotation == planeRotation))
-                        {
-                            newDataToBeSent = true;
-                            transform.localPosition = localHitPosition;  // ScreenObj.transform.InverseTransformPoint(localHitPosition);
-                                                                         //transform.localRotation = Quaternion.Inverse(ScreenObj.transform.rotation) * Quaternion.LookRotation(gazeProvider.HitNormal, Vector3.up);
-                            transform.localRotation = planeRotation; // Quaternion.Inverse(ScreenObj.transform.rotation) * planeRotation;
-                        }
-                        else
-                        {
-                            //Debug.Log("Current update same as before");
-                        }
-
-                    }
-                }
+                transform.localPosition = selfCursorObj.transform.localPosition;
+                transform.localRotation = selfCursorObj.transform.localRotation;
             }
         }
     }

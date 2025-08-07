@@ -66,7 +66,7 @@ namespace MRTK.Tutorials.MultiUserCapabilities
         public override void OnConnectedToMaster()
         {
             Debug.Log("Connected to Photon Master Server.");
-            PhotonNetwork.JoinLobby();
+            //PhotonNetwork.JoinLobby();
             isConnected = true;
             reconnecting = false;
             reconnectDelay = 5f; // Reset delay after success
