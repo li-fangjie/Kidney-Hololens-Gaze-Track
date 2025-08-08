@@ -136,6 +136,10 @@ public class GazeCursorController : MonoBehaviour
                         {
                             myPhotoViewObj.transform.GetChild(i).gameObject.GetComponent<Renderer>().material = myMaterial;
                         }
+                        //if (myPhotoViewObj != null)
+                        //{
+                        //    updateMyCursorStyle(myCursorStyle);
+                        //}
                     }
                 }
                 else
@@ -145,6 +149,10 @@ public class GazeCursorController : MonoBehaviour
                     {
                         curLowestNickName = view.Owner.NickName;
                     }
+                    //if (otherPhotoViewObj != null)
+                    //{
+                    //    updateOtherCursorStyle(otherCursorStyle);
+                    //}
                     //if (int.TryParse(otherPhotoViewObj.name.Substring(4), out int otherUserId))
                     //{
                     //    if (curLowestNickName == null || StringComparerHelper.CompareHashedStrings(view.Owner.NickName, curLowestNickName) < 0)

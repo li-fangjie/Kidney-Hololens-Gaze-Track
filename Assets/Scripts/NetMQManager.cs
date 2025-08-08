@@ -55,9 +55,19 @@ public class NetMQManager : MonoBehaviour
                 using (subscriberSocket = new SubscriberSocket())
                 {
                     subscriberSocket.Options.Linger = TimeSpan.Zero;
+                    subscriberSocket.Options.TcpKeepalive = true;
+                    subscriberSocket.Options.TcpKeepaliveIdle = TimeSpan.FromSeconds(5);
+                    subscriberSocket.Options.TcpKeepaliveInterval = TimeSpan.FromSeconds(1);
+                    
+                    subscriberSocket.Options.ReconnectInterval = TimeSpan.FromSeconds(0.5f);
+                    subscriberSocket.Options.ReconnectIntervalMax = TimeSpan.FromSeconds(0.5f);
+                    
+                    subscriberSocket.Options.HeartbeatInterval = TimeSpan.FromMilliseconds(500);
+                    subscriberSocket.Options.HeartbeatTimeout = TimeSpan.FromMilliseconds(2000);
+                    subscriberSocket.Options.HeartbeatTtl = TimeSpan.FromMilliseconds(3000);
+
                     subscriberSocket.Connect(connectionAddress);
                     subscriberSocket.SubscribeToAnyTopic();
-
                     Debug.Log("[NetMQ] Connected to " + connectionAddress);
                     UpdateConnectionState(true); // Signal connected
 

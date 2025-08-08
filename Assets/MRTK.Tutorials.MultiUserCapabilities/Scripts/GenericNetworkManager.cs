@@ -14,8 +14,8 @@ namespace MRTK.Tutorials.MultiUserCapabilities
 
         private bool isConnected;
         private bool reconnecting = false;
-        private float reconnectDelay = 5f;
-        private float maxReconnectDelay = 30f;
+        private float reconnectDelay = 3f;
+        private float maxReconnectDelay = 5f;
 
         public static event Action OnReadyToStartNetwork;
 
@@ -69,7 +69,7 @@ namespace MRTK.Tutorials.MultiUserCapabilities
             //PhotonNetwork.JoinLobby();
             isConnected = true;
             reconnecting = false;
-            reconnectDelay = 5f; // Reset delay after success
+            reconnectDelay = 3f; // Reset delay after success
             OnReadyToStartNetwork?.Invoke();
         }
 

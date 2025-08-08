@@ -100,7 +100,7 @@ MonoBehaviour:
     componentName: XRSDK Windows Mixed Reality Eye Gaze Provider
     priority: 0
     runtimePlatform: 8
-    deviceManagerProfile: {fileID: 11400000, guid: 2d87dd11b18f700449c9dab320d19b99, type: 2}
+    deviceManagerProfile: {fileID: 11400000, guid: dba429ee3e45db044beb9e2cb770e893, type: 2}
   - componentType:
       reference: Microsoft.MixedReality.Toolkit.XRSDK.OpenXR.OpenXRDeviceManager,
         Microsoft.MixedReality.Toolkit.Providers.OpenXR
@@ -114,7 +114,7 @@ MonoBehaviour:
     componentName: OpenXR XRSDK Eye Gaze Provider
     priority: 0
     runtimePlatform: -1
-    deviceManagerProfile: {fileID: 11400000, guid: 2d87dd11b18f700449c9dab320d19b99, type: 2}
+    deviceManagerProfile: {fileID: 11400000, guid: 57e2b0060c15fea438d38d64da5568d6, type: 2}
   - componentType:
       reference: Microsoft.MixedReality.Toolkit.XRSDK.Oculus.Input.OculusXRSDKDeviceManager,
         Microsoft.MixedReality.Toolkit.Providers.XRSDK.Oculus
