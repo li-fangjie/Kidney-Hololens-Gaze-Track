@@ -5,6 +5,7 @@ using System.Threading;
 using System.Collections.Concurrent;
 using System;
 using System.Text;
+using System.Collections.Generic;
 
 public class NetMQManager : MonoBehaviour
 {
@@ -22,7 +23,10 @@ public class NetMQManager : MonoBehaviour
 
     [SerializeField] public AppConfig appConfig;
     [SerializeField] private GameObject selfGazeTracker;
-    [SerializeField] private GameObject[] otherGazeTrackers;
+    [SerializeField] private GameObject otherGazeParent;
+    [SerializeField] private GameObject gazeTrackerPrefab;
+
+    private List<GameObject> otherGazeTrackers = new();
 
     private ConcurrentQueue<string> messageQueue = new ConcurrentQueue<string>();
 
@@ -33,7 +37,7 @@ public class NetMQManager : MonoBehaviour
     private const string connectionIP = "tcp://127.0.0.1";
     private string connectionAddressPub = $"{connectionIP}:7788";
     private string connectionAddressRouter = $"{connectionIP}:7789";
-
+    
     // Is connected to publisher
     private bool isConnectedPublisher = false;
     private bool isConnectedRouter = false;
@@ -78,7 +82,7 @@ public class NetMQManager : MonoBehaviour
             ProcessMessage(message);
         }
 
-        selfGazePosition = selfGazeTracker.transform.position;
+        selfGazePosition = selfGazeTracker.transform.localPosition;
     }
 
     // Sends the self eye gaze postion through the dealer to the router
@@ -267,8 +271,17 @@ public class NetMQManager : MonoBehaviour
             // Check if the owner of this position isn't the same as this hololens
             if (identity != this.currentIdentity)
             {
+                // Make new gaze tracker if necessary
+                if (i >= otherGazeTrackers.Count)
+                {
+                    var newObj = new GameObject();
+                    newObj.transform.parent = otherGazeParent.transform;
+                    otherGazeTrackers.Add(newObj);
+                }
+
+                // Update position of selected gaze tracker
                 var gazeObject = otherGazeTrackers[i];
-                gazeObject.transform.position = position;
+                gazeObject.transform.localPosition = position;
                 i++;
             }
         }
