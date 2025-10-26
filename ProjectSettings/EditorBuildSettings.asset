@@ -27,9 +27,6 @@ EditorBuildSettings:
     path: Assets/Samples/Mixed Reality Toolkit Examples/2.8.3/Demos - EyeTracking/Scenes/EyeTrackingDemo-05-Visualizer.unity
     guid: 2d6c43a82f3a88c4dbdc3b5e99a68d8a
   - enabled: 0
-    path: 
-    guid: 00000000000000000000000000000000
-  - enabled: 0
     path: Assets/Samples/Mixed Reality Toolkit Examples/2.8.3/Demos - UX/Tooltips/Scenes/TooltipExamples.unity
     guid: de90a43947eced441b4c426e11f35f28
   - enabled: 0
@@ -48,5 +45,8 @@ EditorBuildSettings:
     path: Assets/Scenes/MultiUserArUco.unity
     guid: 4ebf2d84cc4c44947906a36b77f09534
   m_configObjects:
+    UnityEditor.XR.ARCore.ARCoreSettings: {fileID: 11400000, guid: d316ea96421b18f4987553d471b00a31, type: 2}
+    com.unity.xr.arfoundation.simulation_settings: {fileID: 11400000, guid: 477ef86e0a8064e40bcb6222a9c4729c, type: 2}
     com.unity.xr.management.loader_settings: {fileID: 11400000, guid: d19575632317b934db0eaeb50ceaf8fa, type: 2}
     com.unity.xr.openxr.settings4: {fileID: 11400000, guid: e780ea13a96c40a489440f578434c206, type: 2}
+  m_UseUCBPForAssetBundles: 0
