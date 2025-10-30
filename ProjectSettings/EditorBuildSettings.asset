@@ -44,9 +44,12 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/Scenes/MultiUserArUco.unity
     guid: 4ebf2d84cc4c44947906a36b77f09534
-  - enabled: 1
+  - enabled: 0
     path: Assets/MRTK-Magic Leap 2/Samples/EyeTracking/Scenes/EyeTrackingDemoMagicLeap.unity
     guid: 3277ee01d207d4b0d86d9a71ec8dcdea
+  - enabled: 1
+    path: Assets/Scenes/MagicLeap.unity
+    guid: 162ac7c8a264bb248a8febd39b830416
   m_configObjects:
     UnityEditor.XR.ARCore.ARCoreSettings: {fileID: 11400000, guid: d316ea96421b18f4987553d471b00a31, type: 2}
     com.unity.xr.arfoundation.simulation_settings: {fileID: 11400000, guid: 477ef86e0a8064e40bcb6222a9c4729c, type: 2}
