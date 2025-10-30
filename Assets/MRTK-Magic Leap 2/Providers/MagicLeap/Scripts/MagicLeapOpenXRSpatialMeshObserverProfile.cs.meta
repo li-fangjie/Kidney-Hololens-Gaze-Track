@@ -1,0 +1,24 @@
+fileFormatVersion: 2
+guid: ab1b9e29be5faa74aa4fb6c7849d0297
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - visibleMaterial: {instanceID: 0}
+  - occlusionMaterial: {fileID: 2100000, guid: af32c7fbdda78a5469bf62748ff86617, type: 2}
+  - physicsMaterial: {instanceID: 0}
+  - runtimeSpatialMeshPrefab: {fileID: 7060039518517116321, guid: 387aeba9faeb703429e0ebe7426d59a7,
+      type: 3}
+  - MeshPrefab: {fileID: 7060039518517116321, guid: 387aeba9faeb703429e0ebe7426d59a7,
+      type: 3}
+  - GeneralOcclusionMaterial: {instanceID: 0}
+  - GeneralColoredMaterial: {fileID: 2100000, guid: 45950d86975c0a94cab839ea5d4aa1b7,
+      type: 2}
+  - GeneralPointCloudMaterial: {instanceID: 0}
+  - GeneralWireframeMaterial: {fileID: 2100000, guid: a128703779773fb43a26a28e45c9f7ba,
+      type: 2}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
