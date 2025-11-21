@@ -29,7 +29,7 @@ namespace MRTK.Tutorials.MultiUserCapabilities
                 if (scriptHolder.GetComponent<GazeTracker>().newDataToBeSent == true)
                 {
                     scriptHolder.GetComponent<GazeTracker>().newDataToBeSent = false;
-                    Debug.Log("OnPhotonSerializeView Writing");
+                    // Debug.Log("OnPhotonSerializeView Writing");
                     stream.SendNext(transform.localPosition);
                     stream.SendNext(transform.localRotation);
 

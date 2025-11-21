@@ -18,6 +18,7 @@ public class GazeTracker : MonoBehaviour
     private GameObject ScreenQuadFront = default;
     private GameObject ScreenQuadBack = default;
     private Vector3 lastHitPos = default;
+    public Vector3 curGazeOrigin = default;
 
     // Start is called before the first frame update
     void Start()
@@ -45,6 +46,7 @@ public class GazeTracker : MonoBehaviour
         var gazeProvider = CoreServices.InputSystem?.EyeGazeProvider;
         if (gazeProvider != null)
         {
+            curGazeOrigin = gazeProvider.GazeOrigin;
             if (GetLocalHitOnPlanePlaneBased(ScreenQuadFront, ScreenQuadBack, ScreenObj, gazeProvider.GazeOrigin, gazeProvider.GazeDirection, out Vector3 localHitPosition, out Quaternion planeRotation))
             {
                 if (!(selfGazeObj.transform.localPosition == localHitPosition && selfGazeObj.transform.localRotation == planeRotation))

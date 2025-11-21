@@ -124,7 +124,8 @@ public class NetMQManager : MonoBehaviour
 
     private void ProcessMessage(string message)
     {
-        Debug.Log($"Received message: {message}");
+        long ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        Debug.Log($"[Received message|{ts}]: {message}");
 
         string[] parts = message.Split(':');
         if (parts.Length < 2) return;
@@ -133,6 +134,9 @@ public class NetMQManager : MonoBehaviour
         string payload = parts[1].Trim();
         string[] subtopics = topic.Split('/');
         if (subtopics.Length < 1) return;
+        string[] command_subtopics = subtopics[^1].Split('|');
+        if (command_subtopics.Length < 1) return; // Cannot happen but...
+        string command_subtopic = command_subtopics[0];
 
         if (int.TryParse(subtopics[0][4..], out int targetUserId))
         {
@@ -143,7 +147,7 @@ public class NetMQManager : MonoBehaviour
             }
         }
 
-        switch (subtopics[^1])
+        switch (command_subtopic)
         {
             case "DataCollection":
                 HandleDataCollectionSignal(payload);
@@ -190,17 +194,15 @@ public class NetMQManager : MonoBehaviour
 
     private void HandleDataCollectionSignal(string signal)
     {
-        switch (signal)
+        if (signal.StartsWith("Start Recording"))
         {
-            case "Start Recording":
-                gazeCursorController.startRecording();
-                break;
-            case "Stop Recording":
-                gazeCursorController.stopRecording();
-                break;
-            default:
-                Debug.LogWarning($"Unknown data collection signal: {signal}");
-                break;
+            gazeCursorController.startRecording();
+        } else if (signal.StartsWith("Stop Recording"))
+        {
+            gazeCursorController.stopRecording();
+        } else
+        {
+            Debug.LogWarning($"Unknown data collection signal: {signal}");
         }
     }
 

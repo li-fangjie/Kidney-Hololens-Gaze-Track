@@ -153,7 +153,7 @@ namespace ArUcoDetectionHoloLensUnity
             // Predict every 3rd frame
             if (_frameCount == skipFrames)
             {
-                Debug.Log("Starting to Track...");
+                // Debug.Log("Starting to Track...");
                 if (myText != null)
                 {
                     myText.text = string.Format("Started Tracking Run...");
@@ -314,12 +314,14 @@ namespace ArUcoDetectionHoloLensUnity
                     // curMarker.markerObj.transform.SetPositionAndRotation(
                     //    CvUtils.GetVectorFromMatrix(transformUnityWorld),
                     //    CvUtils.GetQuatFromMatrix(transformUnityWorld));
+                    Vector3 position_world = CvUtils.GetVectorFromMatrix(transformUnityWorld);
+                    Debug.Log($"{detectedMarker.Id} position camera: ({position.x:F3}, {position.y:F3}, {position.z:F3}), positional world: ({position_world.x:F3}, {position_world.y:F3}, {position_world.z:F3})");
                     if (curMarker.initTrackCount >= initTrackTotal)
                     {
                         curMarker.trackStarted = true;
                         GameObject tHolder = new GameObject();
                         tHolder.transform.SetPositionAndRotation(
-                            CvUtils.GetVectorFromMatrix(transformUnityWorld),
+                            position_world,
                             CvUtils.GetQuatFromMatrix(transformUnityWorld));
                         TransformUtils.LerpTransforms(curMarker.markerObj, tHolder, RSmoothFactor, VSmoothFactor, curMarker.markerObj);
                         Destroy(tHolder);
@@ -327,7 +329,7 @@ namespace ArUcoDetectionHoloLensUnity
                     else
                     {
                         curMarker.markerObj.transform.SetPositionAndRotation(
-                        CvUtils.GetVectorFromMatrix(transformUnityWorld),
+                        position_world,
                         CvUtils.GetQuatFromMatrix(transformUnityWorld));
                         curMarker.initTrackCount++;
                     }

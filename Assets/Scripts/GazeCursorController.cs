@@ -55,7 +55,9 @@ public class GazeCursorController : MonoBehaviour
     private StreamWriter myGazeWriter = null;
     private StreamWriter otherGazeWriter = null;
     private StreamWriter screenPosWriter = null;
-
+    private StreamWriter myGazeOriginWriter = null;
+    private StreamWriter cameraPosWriter = null;
+    
     //private Thread listenerThread;
     //private bool listenerRunning = true;
     private SubscriberSocket subscriberSocket;
@@ -312,8 +314,38 @@ public class GazeCursorController : MonoBehaviour
             try
             {
                 string curFilePath = Application.persistentDataPath + "/" + fileNamePrefix + "_" + timeStamp + "_" + recordingTrialCount + ".csv";
-                writer ??= new System.IO.StreamWriter(@curFilePath, true);
+                writer ??= new System.IO.StreamWriter(@curFilePath, true); // new StreamWriter(fileName, true, Encoding.UTF8, 4096))
                 writer.WriteLine(px + "," + py + "," + pz + "," + rw + "," + rx + "," + ry + "," + rz + "," + timeStamp + "," + curUnixTimeString);
+                //writer.WriteLine(px + "," + py + "," + pz + "," + rw + "," + rx + "," + ry + "," + rz + "," + curUnixTimeString);
+            }
+
+            catch (Exception ex)
+            {
+                writer?.Dispose();
+                throw new ApplicationException("Failed to save:  ", ex);
+            }
+        }
+    }
+
+    public void saveVector3Data(float px, float py, float pz, DateTime recordStartTime, DateTime curTime, ref StreamWriter writer, string fileNamePrefix = "my_Eye_Gaze_Coordinate")
+    {
+        // long startUnixTime = ((DateTimeOffset)recordStartTime).ToUnixTimeMilliseconds();
+        string timeStamp = recordStartTime.ToLocalTime().ToString("yyyyMMdd_HHmmss");
+
+        long curUnixTime = ((DateTimeOffset)curTime).ToUnixTimeMilliseconds();
+        string curUnixTimeString = curUnixTime.ToString();
+
+
+        if (isRecording)
+        {
+            //Debug.Log("filepath" + filepath_in_function2);
+            //string test_filePath = "U:/Users/yizhou.li@vanderbilt.edu/AppData/Local/Packages/Eyerecorder_pzq3xp76mxafg/LocalState/position_Cursor_IO.csv"; 
+            try
+            {
+                string curFilePath = Application.persistentDataPath + "/" + fileNamePrefix + "_" + timeStamp + "_" + recordingTrialCount + ".csv";
+                writer ??= new System.IO.StreamWriter(@curFilePath, true); // new StreamWriter(fileName, true, Encoding.UTF8, 4096))
+                writer.WriteLine(px + "," + py + "," + pz + "," + timeStamp + "," + curUnixTimeString);
+                //writer.WriteLine(px + "," + py + "," + pz + "," + curUnixTimeString);
             }
 
             catch (Exception ex)
@@ -511,6 +543,17 @@ public class GazeCursorController : MonoBehaviour
                     ref myGazeWriter,
                     "my_Eye_Gaze_Transforms"
                     );
+
+                saveVector3Data(
+                gameObject.GetComponent<GazeTracker>().curGazeOrigin.x,
+                gameObject.GetComponent<GazeTracker>().curGazeOrigin.y,
+                gameObject.GetComponent<GazeTracker>().curGazeOrigin.z,
+                curRecordStartTime,
+                curTime,
+                ref myGazeOriginWriter,
+                "my_Eye_Gaze_Origin_Transforms"
+                );
+
             } else
             {
                 Debug.Log("My Photon Obj Null");
@@ -555,6 +598,29 @@ public class GazeCursorController : MonoBehaviour
             {
                 Debug.Log("screenObj Null");
             }
+
+            if (Camera.main)
+            {
+                saveTransformData(
+                    Camera.main.gameObject.transform.localPosition.x,
+                    Camera.main.gameObject.transform.localPosition.y,
+                    Camera.main.gameObject.transform.localPosition.z,
+                    Camera.main.gameObject.transform.localRotation.w,
+                    Camera.main.gameObject.transform.localRotation.x,
+                    Camera.main.gameObject.transform.localRotation.y,
+                    Camera.main.gameObject.transform.localRotation.z,
+                    curRecordStartTime,
+                    curTime,
+                    ref cameraPosWriter,
+                    "self_camera_Transforms"
+                );
+            }
+            else
+            {
+                Debug.Log("camera Null");
+            }
+
+
         }
     }
 

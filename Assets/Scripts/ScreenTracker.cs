@@ -119,7 +119,7 @@ public class ScreenTracker : MonoBehaviour
                         }
                     }
                 
-                    Debug.Log("Marker to Screen T determined, now normal tracking...");
+                    // Debug.Log("Marker to Screen T determined, now normal tracking...");
                     // debugText.text = string.Format("Marker to Screen T determined, now normal tracking...\n{0}\n{1}", screenObj.transform.position, screenObj.transform.eulerAngles);
                     if (debugText != null)
                     {

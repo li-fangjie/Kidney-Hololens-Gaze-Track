@@ -2914,7 +2914,7 @@ MonoBehaviour:
   appConfig: {fileID: 805832272}
   debugText: {fileID: 345365573}
   screenCenterToMarkersDetermined: 0
-  screenCenterToMarkersDetermineFrames: 100
+  screenCenterToMarkersDetermineFrames: 20
   RSmoothFactor: 0.2
   VSmoothFactor: 0.2
   screenWidth: 0
@@ -3066,6 +3066,7 @@ MonoBehaviour:
   defaultDistanceInMeters: 3
   parentObj: {fileID: 0}
   ScreenObj: {fileID: 0}
+  curGazeOrigin: {x: 0, y: 0, z: 0}
 --- !u!1001 &812809156
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4812,7 +4813,7 @@ Camera:
     height: 1
   near clip plane: 0.1
   far clip plane: 1000
-  field of view: 30
+  field of view: 26.991467
   orthographic: 0
   orthographic size: 5
   m_Depth: -1
