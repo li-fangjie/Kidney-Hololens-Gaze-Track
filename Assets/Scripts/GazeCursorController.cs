@@ -57,6 +57,8 @@ public class GazeCursorController : MonoBehaviour
     private StreamWriter screenPosWriter = null;
     private StreamWriter myGazeOriginWriter = null;
     private StreamWriter cameraPosWriter = null;
+    private StreamWriter mySmoothedGazeWriter = null;
+    private GazeTracker gazeTracker = null;
     
     //private Thread listenerThread;
     //private bool listenerRunning = true;
@@ -74,6 +76,7 @@ public class GazeCursorController : MonoBehaviour
     {
         AsyncIO.ForceDotNet.Force();
 
+        gazeTracker = GetComponent<GazeTracker>();
         Time.fixedDeltaTime = 0.01111f; //0.016667f; // 0.011111f;
         // Application.targetFrameRate = -1;
         cursorScaleGradient = cursorScaleMax - cursorScaleMin;
@@ -545,14 +548,34 @@ public class GazeCursorController : MonoBehaviour
                     );
 
                 saveVector3Data(
-                gameObject.GetComponent<GazeTracker>().curGazeOrigin.x,
-                gameObject.GetComponent<GazeTracker>().curGazeOrigin.y,
-                gameObject.GetComponent<GazeTracker>().curGazeOrigin.z,
+                gazeTracker.curGazeOrigin.x,
+                gazeTracker.curGazeOrigin.y,
+                gazeTracker.curGazeOrigin.z,
                 curRecordStartTime,
                 curTime,
                 ref myGazeOriginWriter,
                 "my_Eye_Gaze_Origin_Transforms"
                 );
+
+                if (gazeTracker.hasSmoothedScreenHit)
+                {
+                    Vector3 smoothedPosition = gazeTracker.smoothedGazeLocalPosition;
+                    Quaternion smoothedRotation = gazeTracker.smoothedGazeLocalRotation;
+
+                    saveTransformData(
+                        smoothedPosition.x,
+                        smoothedPosition.y,
+                        smoothedPosition.z,
+                        smoothedRotation.w,
+                        smoothedRotation.x,
+                        smoothedRotation.y,
+                        smoothedRotation.z,
+                        curRecordStartTime,
+                        curTime,
+                        ref mySmoothedGazeWriter,
+                        "my_Eye_Gaze_Smoothed_Transforms"
+                    );
+                }
 
             } else
             {
@@ -648,16 +671,16 @@ public class GazeCursorController : MonoBehaviour
         {
             buttonTMP.GetComponent<TextMeshPro>().text = "Stop Recording Data";
         }
-        myGazeWriter?.Dispose();
-        otherGazeWriter?.Dispose();
-        screenPosWriter?.Dispose();
+        DisposeRecordingWriters();
 
         curRecordStartTime = DateTime.Now;
         string timeStamp = curRecordStartTime.ToLocalTime().ToString("yyyyMMdd_HHmmss");
         string myGazeFilePath = Application.persistentDataPath + "/" + "my_Eye_Gaze_Transforms" + "_" + timeStamp + "_" + recordingTrialCount + ".csv";
+        string mySmoothedGazeFilePath = Application.persistentDataPath + "/" + "my_Eye_Gaze_Smoothed_Transforms" + "_" + timeStamp + "_" + recordingTrialCount + ".csv";
         string otherGazeFilePath = Application.persistentDataPath + "/" + "other_Eye_Gaze_Transforms" + "_" + timeStamp + "_" + recordingTrialCount + ".csv";
         string screenPoseFilePath = Application.persistentDataPath + "/" + "screen_Track_Transforms" + "_" + timeStamp + "_" + recordingTrialCount + ".csv";
         myGazeWriter = new System.IO.StreamWriter(myGazeFilePath, true);
+        mySmoothedGazeWriter = new System.IO.StreamWriter(mySmoothedGazeFilePath, true);
         otherGazeWriter = new System.IO.StreamWriter(otherGazeFilePath, true);
         screenPosWriter = new System.IO.StreamWriter(screenPoseFilePath, true);
 
@@ -686,9 +709,7 @@ public class GazeCursorController : MonoBehaviour
         {
             buttonTMP.GetComponent<TextMeshPro>().text = "Record Gaze Data";
         }
-        myGazeWriter?.Dispose();
-        otherGazeWriter?.Dispose();
-        screenPosWriter?.Dispose();
+        DisposeRecordingWriters();
 
         if (dispText != null)
         {
@@ -698,6 +719,27 @@ public class GazeCursorController : MonoBehaviour
             // curMsg = curMsg.Split('\n')[0] + "\nRecording";
             dispText.text = "Not Recording Gaze";
         }
+    }
+
+    private void DisposeRecordingWriters()
+    {
+        myGazeWriter?.Dispose();
+        myGazeWriter = null;
+
+        mySmoothedGazeWriter?.Dispose();
+        mySmoothedGazeWriter = null;
+
+        otherGazeWriter?.Dispose();
+        otherGazeWriter = null;
+
+        screenPosWriter?.Dispose();
+        screenPosWriter = null;
+
+        myGazeOriginWriter?.Dispose();
+        myGazeOriginWriter = null;
+
+        cameraPosWriter?.Dispose();
+        cameraPosWriter = null;
     }
 
     public void onToggleGazeRecording()

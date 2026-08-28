@@ -2,6 +2,7 @@ using Microsoft.MixedReality.Toolkit;
 using Microsoft.MixedReality.Toolkit.Input;
 using Microsoft.MixedReality.Toolkit.Utilities;
 using Photon.Pun;
+using System;
 using System.IO;
 using System.Collections;
 using System.Collections.Generic;
@@ -19,6 +20,15 @@ public class GazeTracker : MonoBehaviour
     private GameObject ScreenQuadBack = default;
     private Vector3 lastHitPos = default;
     public Vector3 curGazeOrigin = default;
+
+    private readonly EyeGazeSmoother validationSmoother = new EyeGazeSmoother();
+    private DateTime lastProviderTimestamp = DateTime.MinValue;
+    private Ray latestSmoothedRay;
+    private bool hasSmoothedRay = false;
+
+    public bool hasSmoothedScreenHit { get; private set; } = false;
+    public Vector3 smoothedGazeLocalPosition { get; private set; }
+    public Quaternion smoothedGazeLocalRotation { get; private set; }
 
     // Start is called before the first frame update
     void Start()
@@ -44,24 +54,53 @@ public class GazeTracker : MonoBehaviour
     private void FixedUpdate()
     {
         var gazeProvider = CoreServices.InputSystem?.EyeGazeProvider;
-        if (gazeProvider != null)
-        {
-            curGazeOrigin = gazeProvider.GazeOrigin;
-            if (GetLocalHitOnPlanePlaneBased(ScreenQuadFront, ScreenQuadBack, ScreenObj, gazeProvider.GazeOrigin, gazeProvider.GazeDirection, out Vector3 localHitPosition, out Quaternion planeRotation))
-            {
-                if (!(selfGazeObj.transform.localPosition == localHitPosition && selfGazeObj.transform.localRotation == planeRotation))
-                {
-                    newDataToBeSent = true;
-                    selfGazeObj.transform.localPosition = localHitPosition;  // ScreenObj.transform.InverseTransformPoint(localHitPosition);
-                                                                             //transform.localRotation = Quaternion.Inverse(ScreenObj.transform.rotation) * Quaternion.LookRotation(gazeProvider.HitNormal, Vector3.up);
-                    selfGazeObj.transform.localRotation = planeRotation; // Quaternion.Inverse(ScreenObj.transform.rotation) * planeRotation;
-                }
-                else
-                {
-                    //Debug.Log("Current update same as before");
-                }
 
+        if (gazeProvider == null)
+        {
+            hasSmoothedScreenHit = false;
+            return;
+        }
+
+        Vector3 gazeOrigin = gazeProvider.GazeOrigin;
+        Vector3 gazeDirection = gazeProvider.GazeDirection.normalized;
+        curGazeOrigin = gazeOrigin;
+
+        // Preserve the existing raw gaze path and SelfGazeObj behavior.
+        if (GetLocalHitOnPlanePlaneBased(ScreenQuadFront, ScreenQuadBack, ScreenObj, gazeOrigin, gazeDirection, out Vector3 localHitPosition, out Quaternion planeRotation))
+        {
+            if (!(selfGazeObj.transform.localPosition == localHitPosition && selfGazeObj.transform.localRotation == planeRotation))
+            {
+                newDataToBeSent = true;
+                selfGazeObj.transform.localPosition = localHitPosition;
+                selfGazeObj.transform.localRotation = planeRotation;
             }
+        }
+
+        // FixedUpdate may observe the same provider sample more than once. Only
+        // advance the stateful MRTK smoother when the provider timestamp changes.
+        DateTime providerTimestamp = gazeProvider.Timestamp;
+        if (!hasSmoothedRay || providerTimestamp != lastProviderTimestamp)
+        {
+            latestSmoothedRay = validationSmoother.SmoothGaze(new Ray(gazeOrigin, gazeDirection));
+            lastProviderTimestamp = providerTimestamp;
+            hasSmoothedRay = true;
+        }
+
+        // Re-project every FixedUpdate so raw and smoothed gaze use the same
+        // current screen transform, even between new eye-provider samples.
+        hasSmoothedScreenHit = false;
+        if (hasSmoothedRay && GetLocalHitOnPlanePlaneBased(
+                ScreenQuadFront,
+                ScreenQuadBack,
+                ScreenObj,
+                latestSmoothedRay.origin,
+                latestSmoothedRay.direction,
+                out Vector3 smoothedLocalHitPosition,
+                out Quaternion smoothedPlaneRotation))
+        {
+            hasSmoothedScreenHit = true;
+            smoothedGazeLocalPosition = smoothedLocalHitPosition;
+            smoothedGazeLocalRotation = smoothedPlaneRotation;
         }
     }
 
