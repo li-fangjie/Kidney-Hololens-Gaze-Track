@@ -56,8 +56,11 @@ public class GazeCursorController : MonoBehaviour
     private StreamWriter otherGazeWriter = null;
     private StreamWriter screenPosWriter = null;
     private StreamWriter myGazeOriginWriter = null;
+    private StreamWriter myGazeDirectionWriter = null;
     private StreamWriter cameraPosWriter = null;
     private StreamWriter mySmoothedGazeWriter = null;
+    private StreamWriter mySmoothedGazeOriginWriter = null;
+    private StreamWriter mySmoothedGazeDirectionWriter = null;
     private GazeTracker gazeTracker = null;
     
     //private Thread listenerThread;
@@ -557,6 +560,39 @@ public class GazeCursorController : MonoBehaviour
                 "my_Eye_Gaze_Origin_Transforms"
                 );
 
+                saveVector3Data(
+                gazeTracker.curGazeDirection.x,
+                gazeTracker.curGazeDirection.y,
+                gazeTracker.curGazeDirection.z,
+                curRecordStartTime,
+                curTime,
+                ref myGazeDirectionWriter,
+                "my_Eye_Gaze_Direction_Transforms"
+                );
+
+                if (gazeTracker.hasSmoothedRay)
+                {
+                    saveVector3Data(
+                    gazeTracker.smoothedGazeOrigin.x,
+                    gazeTracker.smoothedGazeOrigin.y,
+                    gazeTracker.smoothedGazeOrigin.z,
+                    curRecordStartTime,
+                    curTime,
+                    ref mySmoothedGazeOriginWriter,
+                    "my_Eye_Gaze_Smoothed_Origin_Transforms"
+                    );
+
+                    saveVector3Data(
+                    gazeTracker.smoothedGazeDirection.x,
+                    gazeTracker.smoothedGazeDirection.y,
+                    gazeTracker.smoothedGazeDirection.z,
+                    curRecordStartTime,
+                    curTime,
+                    ref mySmoothedGazeDirectionWriter,
+                    "my_Eye_Gaze_Smoothed_Direction_Transforms"
+                    );
+                }
+
                 if (gazeTracker.hasSmoothedScreenHit)
                 {
                     Vector3 smoothedPosition = gazeTracker.smoothedGazeLocalPosition;
@@ -677,10 +713,16 @@ public class GazeCursorController : MonoBehaviour
         string timeStamp = curRecordStartTime.ToLocalTime().ToString("yyyyMMdd_HHmmss");
         string myGazeFilePath = Application.persistentDataPath + "/" + "my_Eye_Gaze_Transforms" + "_" + timeStamp + "_" + recordingTrialCount + ".csv";
         string mySmoothedGazeFilePath = Application.persistentDataPath + "/" + "my_Eye_Gaze_Smoothed_Transforms" + "_" + timeStamp + "_" + recordingTrialCount + ".csv";
+        string myGazeDirectionFilePath = Application.persistentDataPath + "/" + "my_Eye_Gaze_Direction_Transforms" + "_" + timeStamp + "_" + recordingTrialCount + ".csv";
+        string mySmoothedGazeOriginFilePath = Application.persistentDataPath + "/" + "my_Eye_Gaze_Smoothed_Origin_Transforms" + "_" + timeStamp + "_" + recordingTrialCount + ".csv";
+        string mySmoothedGazeDirectionFilePath = Application.persistentDataPath + "/" + "my_Eye_Gaze_Smoothed_Direction_Transforms" + "_" + timeStamp + "_" + recordingTrialCount + ".csv";
         string otherGazeFilePath = Application.persistentDataPath + "/" + "other_Eye_Gaze_Transforms" + "_" + timeStamp + "_" + recordingTrialCount + ".csv";
         string screenPoseFilePath = Application.persistentDataPath + "/" + "screen_Track_Transforms" + "_" + timeStamp + "_" + recordingTrialCount + ".csv";
         myGazeWriter = new System.IO.StreamWriter(myGazeFilePath, true);
         mySmoothedGazeWriter = new System.IO.StreamWriter(mySmoothedGazeFilePath, true);
+        myGazeDirectionWriter = new System.IO.StreamWriter(myGazeDirectionFilePath, true);
+        mySmoothedGazeOriginWriter = new System.IO.StreamWriter(mySmoothedGazeOriginFilePath, true);
+        mySmoothedGazeDirectionWriter = new System.IO.StreamWriter(mySmoothedGazeDirectionFilePath, true);
         otherGazeWriter = new System.IO.StreamWriter(otherGazeFilePath, true);
         screenPosWriter = new System.IO.StreamWriter(screenPoseFilePath, true);
 
@@ -728,6 +770,15 @@ public class GazeCursorController : MonoBehaviour
 
         mySmoothedGazeWriter?.Dispose();
         mySmoothedGazeWriter = null;
+
+        myGazeDirectionWriter?.Dispose();
+        myGazeDirectionWriter = null;
+
+        mySmoothedGazeOriginWriter?.Dispose();
+        mySmoothedGazeOriginWriter = null;
+
+        mySmoothedGazeDirectionWriter?.Dispose();
+        mySmoothedGazeDirectionWriter = null;
 
         otherGazeWriter?.Dispose();
         otherGazeWriter = null;

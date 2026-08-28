@@ -20,13 +20,16 @@ public class GazeTracker : MonoBehaviour
     private GameObject ScreenQuadBack = default;
     private Vector3 lastHitPos = default;
     public Vector3 curGazeOrigin = default;
+    public Vector3 curGazeDirection { get; private set; }
 
     private readonly EyeGazeSmoother validationSmoother = new EyeGazeSmoother();
     private DateTime lastProviderTimestamp = DateTime.MinValue;
     private Ray latestSmoothedRay;
-    private bool hasSmoothedRay = false;
+    public bool hasSmoothedRay { get; private set; } = false;
 
     public bool hasSmoothedScreenHit { get; private set; } = false;
+    public Vector3 smoothedGazeOrigin { get; private set; }
+    public Vector3 smoothedGazeDirection { get; private set; }
     public Vector3 smoothedGazeLocalPosition { get; private set; }
     public Quaternion smoothedGazeLocalRotation { get; private set; }
 
@@ -64,6 +67,7 @@ public class GazeTracker : MonoBehaviour
         Vector3 gazeOrigin = gazeProvider.GazeOrigin;
         Vector3 gazeDirection = gazeProvider.GazeDirection.normalized;
         curGazeOrigin = gazeOrigin;
+        curGazeDirection = gazeDirection;
 
         // Preserve the existing raw gaze path and SelfGazeObj behavior.
         if (GetLocalHitOnPlanePlaneBased(ScreenQuadFront, ScreenQuadBack, ScreenObj, gazeOrigin, gazeDirection, out Vector3 localHitPosition, out Quaternion planeRotation))
@@ -82,6 +86,8 @@ public class GazeTracker : MonoBehaviour
         if (!hasSmoothedRay || providerTimestamp != lastProviderTimestamp)
         {
             latestSmoothedRay = validationSmoother.SmoothGaze(new Ray(gazeOrigin, gazeDirection));
+            smoothedGazeOrigin = latestSmoothedRay.origin;
+            smoothedGazeDirection = latestSmoothedRay.direction;
             lastProviderTimestamp = providerTimestamp;
             hasSmoothedRay = true;
         }
