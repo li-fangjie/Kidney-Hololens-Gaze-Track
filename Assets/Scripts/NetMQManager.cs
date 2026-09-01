@@ -14,7 +14,7 @@ public class NetMQManager : MonoBehaviour
     [SerializeField] public AppConfig appConfig;
 
     private ConcurrentQueue<string> messageQueue = new ConcurrentQueue<string>();
-    private string connectionAddress = "tcp://192.168.0.10:7788";
+    private string connectionAddress = "tcp://192.168.137.1:7788";
 
     private bool isConnected = false;
 
